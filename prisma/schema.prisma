@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  DEVELOPER
+}
+
+// NextAuth Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(CLIENT)
+  bio           String?
+  certificates  String?
+  
+  accounts      Account[]
+  sessions      Session[]
+  
+  projects      Project[] @relation("ClientProjects")
+  applications  Application[]
+  developedProjects Project[] @relation("DeveloperProjects")
+  selectedForProjects SelectedDeveloper[]
+  likes         Like[]
+  reposts       Repost[]
+  chatsAsClient Chat[] @relation("ChatClient")
+  chatsAsDeveloper Chat[] @relation("ChatDeveloper")
+  messagesSent Message[]
+  
+  reviewsReceived Review[] @relation("Reviewee")
+  reviewsGiven    Review[] @relation("Reviewer")
+
+  notifications   Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // APPLICATION, SELECTION, COMPLETION, CANCELLATION
+  message   String
+  link      String?  // URL to redirect
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// App Models
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectType {
+  UNITARY
+  GROUP
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+model Project {
+  id               String              @id @default(cuid())
+  title            String
+  description      String
+  budget           Float
+  duration         String              // How long the development will take (e.g., "2 weeks")
+  category         String?             // Games, Web, Mobile, etc.
+  technologies     String?             // Unity, React, Django, etc.
+  type             ProjectType         @default(UNITARY)
+  maxDevelopers    Int                 @default(1) // For group projects
+  status           ProjectStatus       @default(OPEN)
+  cancelReason     String?
+  paymentMethod    String?             // BCP, Visa, PayPal, etc.
+  paymentStatus    PaymentStatus       @default(PENDING)
+  
+  clientId         String
+  client           User                @relation("ClientProjects", fields: [clientId], references: [id])
+  
+  developerId      String?
+  developer        User?               @relation("DeveloperProjects", fields: [developerId], references: [id])
+  selectedDevelopers SelectedDeveloper[] // For group projects
+  
+  applications     Application[]
+  reviews          Review[]
+  likes            Like[]
+  reposts          Repost[]
+  chats            Chat[]
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime? // How long the post will be visible
+}
+
+model SelectedDeveloper {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  developerId String
+  developer User     @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([projectId, userId])
+}
+
+model Repost {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([projectId, userId])
+}
+
+model Chat {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User        @relation("ChatClient", fields: [clientId], references: [id], onDelete: Cascade)
+  developerId String
+  developer   User      @relation("ChatDeveloper", fields: [developerId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime @default(now())
+  @@unique([projectId, clientId, developerId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  projectId     String
+  project       Project           @relation(fields: [projectId], references: [id])
+  developerId   String
+  developer     User              @relation(fields: [developerId], references: [id])
+  reason        String?           // Why the developer is applying
+  status        ApplicationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  
+  reviewerId    String
+  reviewer      User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  
+  revieweeId    String
+  reviewee      User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  
+  stars         Int      // 1 to 5
+  comment       String?
+  createdAt     DateTime @default(now())
+}
