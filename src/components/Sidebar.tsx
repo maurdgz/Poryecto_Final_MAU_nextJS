@@ -274,6 +274,8 @@ export function Sidebar() {
 
         <SidebarItem icon={Bell} label={t("notifications")} href="/notifications" active={pathname === "/notifications"} />
             
+        {session && (
+          <>
             {role === "CLIENT" ? (
               <SidebarItem icon={Briefcase} label={t("my_projects")} href="/my-projects" active={pathname === "/my-projects"} />
             ) : (
