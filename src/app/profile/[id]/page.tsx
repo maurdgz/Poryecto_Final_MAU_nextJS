@@ -382,6 +382,7 @@ export default function Profile() {
                       author={project.client?.name || user.name}
                       handle={project.client?.email?.split('@')[0] || user.email?.split('@')[0]}
                       authorId={project.client?.id || user.id}
+                      authorImage={project.client?.image}
                       content={project.description}
                       budget={`S/ ${project.budget}`}
                       duration={project.duration}
@@ -444,6 +445,7 @@ export default function Profile() {
                       author={like.project.client?.name || user.name}
                       handle={like.project.client?.email?.split('@')[0] || user.email?.split('@')[0]}
                       authorId={like.project.client?.id || user.id}
+                      authorImage={like.project.client?.image}
                       content={like.project.description}
                       budget={`S/ ${like.project.budget}`}
                       duration={like.project.duration}
@@ -480,6 +482,7 @@ export default function Profile() {
                       author={saved.project.client?.name || user.name}
                       handle={saved.project.client?.email?.split('@')[0] || user.email?.split('@')[0]}
                       authorId={saved.project.client?.id || user.id}
+                      authorImage={saved.project.client?.image}
                       content={saved.project.description}
                       budget={`S/ ${saved.project.budget}`}
                       duration={saved.project.duration}

@@ -37,12 +37,32 @@ export async function POST(
       return NextResponse.json({ liked: false });
     } else {
       // Add like
-      await prisma.like.create({
+      const like = await prisma.like.create({
         data: {
           projectId,
           userId,
         },
+        include: {
+          project: {
+            include: {
+              client: true,
+            },
+          },
+        },
       });
+
+      // Create notification for project owner if the liker is not the owner
+      if (like.project.clientId !== userId) {
+        await prisma.notification.create({
+          data: {
+            userId: like.project.clientId,
+            type: "LIKE",
+            message: `A ${session.user?.name || 'Alguien'} le dio like a tu proyecto "${like.project.title}"`,
+            link: `/projects/${projectId}`,
+          },
+        });
+      }
+
       return NextResponse.json({ liked: true });
     }
   } catch (error) {

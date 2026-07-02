@@ -107,6 +107,17 @@ export default function ProjectDetail() {
     }
   };
 
+  const handleApply = async (reason: string) => {
+    if (!session?.user) return;
+    try {
+      await axios.post(`/api/projects/${id}/apply`, { reason });
+      toast.success("Postulación enviada exitosamente");
+      fetchProject();
+    } catch (error) {
+      toast.error("Error al postular");
+    }
+  };
+
   const isOwner = session?.user && (session.user as any).id === project?.clientId;
 
   if (loading) return (
@@ -181,6 +192,21 @@ export default function ProjectDetail() {
                 <span className="text-sm">0</span>
               </div>
             </div>
+
+            {/* Apply Button for Developers */}
+            {session?.user && (session.user as any).role === "DEVELOPER" && !isOwner && project.status === "OPEN" && (
+              <button
+                onClick={() => {
+                  const reason = prompt("¿Por qué quieres postular a este proyecto?");
+                  if (reason) {
+                    handleApply(reason);
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg"
+              >
+                Postular al Proyecto
+              </button>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="backdrop-blur-md bg-slate-950/40 border border-white/5 shadow-2xl rounded-2xl p-4 space-y-1">

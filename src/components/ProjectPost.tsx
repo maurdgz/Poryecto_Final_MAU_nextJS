@@ -21,6 +21,7 @@ interface ProjectPostProps {
   author: string;
   handle: string;
   authorId: string;
+  authorImage?: string;
   content: string;
   budget: string;
   duration: string;
@@ -49,6 +50,7 @@ export default function ProjectPost({
   author,
   handle,
   authorId,
+  authorImage,
   content,
   budget,
   duration,
@@ -162,9 +164,10 @@ export default function ProjectPost({
       >
         <div 
           onClick={handleProfileClick}
-          className={`w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-500/50 transition-all flex items-center justify-center bg-gradient-to-br ${author ? 'from-indigo-400 via-purple-400 to-emerald-400' : 'from-zinc-600 to-zinc-700'}`}
+          className={`w-10 h-10 rounded-full flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-500/50 transition-all flex items-center justify-center ${authorImage ? '' : 'bg-gradient-to-br from-indigo-400 via-purple-400 to-emerald-400'}`}
+          style={authorImage ? { backgroundImage: `url(${authorImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
         >
-          <span className="text-xs font-black text-white">{author ? author.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?'}</span>
+          {!authorImage && <span className="text-xs font-black text-white">{author ? author.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?'}</span>}
         </div>
         
         <div className="flex-1 min-w-0">

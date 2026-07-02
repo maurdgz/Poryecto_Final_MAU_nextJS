@@ -24,6 +24,7 @@ export async function GET(
                 id: true,
                 name: true,
                 email: true,
+                image: true,
               }
             },
             _count: {

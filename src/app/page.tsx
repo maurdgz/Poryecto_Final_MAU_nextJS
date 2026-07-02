@@ -358,6 +358,7 @@ export default function Home() {
                 author={project.client?.name || "Usuario"} 
                 handle={project.client?.email?.split('@')[0] || "user"} 
                 authorId={project.client?.id}
+                authorImage={project.client?.image}
                 content={project.description}
                 budget={`S/ ${project.budget}`}
                 duration={project.duration}
