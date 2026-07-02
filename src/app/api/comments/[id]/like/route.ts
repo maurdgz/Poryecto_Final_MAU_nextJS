@@ -14,6 +14,15 @@ export async function POST(
       return NextResponse.json({ error: "Usuario no autenticado" }, { status: 401 });
     }
 
+    // Verify comment exists
+    const comment = await prisma.comment.findUnique({
+      where: { id },
+    });
+
+    if (!comment) {
+      return NextResponse.json({ error: "Comentario no encontrado" }, { status: 404 });
+    }
+
     const existingLike = await prisma.commentLike.findFirst({
       where: {
         commentId: id,

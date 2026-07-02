@@ -204,6 +204,19 @@ export default function ProjectPost({
             </div>
           )}
 
+          {/* Apply Button for Developers in Feed */}
+          {canApply && userId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowApplyModal(true);
+              }}
+              className="w-full mt-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold py-2 px-4 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg text-sm"
+            >
+              Postular al Proyecto
+            </button>
+          )}
+
           <div className="flex items-center justify-between mt-4 text-zinc-500 max-w-md">
             <div className="flex items-center gap-1 hover:text-blue-500 transition-colors group">
               <div className="p-2 group-hover:bg-blue-500/10 rounded-full"><MessageCircle size={18} /></div>
