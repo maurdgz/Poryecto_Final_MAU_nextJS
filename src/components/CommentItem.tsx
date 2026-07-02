@@ -11,6 +11,7 @@ interface CommentItemProps {
   author: string;
   handle: string;
   authorId: string;
+  authorImage?: string;
   content: string;
   likes: number;
   isLiked: boolean;
@@ -22,6 +23,7 @@ export default function CommentItem({
   id,
   author,
   handle,
+  authorImage,
   authorId,
   content,
   likes,
@@ -53,8 +55,8 @@ export default function CommentItem({
   return (
     <div className="p-4 border-b border-zinc-800 hover:bg-zinc-900/30 transition-colors">
       <div className="flex gap-3">
-        <Link href={`/profile/${authorId}`} className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-emerald-400 flex items-center justify-center flex-shrink-0 hover:ring-2 hover:ring-indigo-500/50 transition-all">
-          <span className="text-xs font-black text-white">{author.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?'}</span>
+        <Link href={`/profile/${authorId}`} className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 hover:ring-2 hover:ring-indigo-500/50 transition-all ${authorImage ? '' : 'bg-gradient-to-br from-indigo-400 via-purple-400 to-emerald-400'}`} style={authorImage ? { backgroundImage: `url(${authorImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+          {!authorImage && <span className="text-xs font-black text-white">{author.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?'}</span>}
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2">

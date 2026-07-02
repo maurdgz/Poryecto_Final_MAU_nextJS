@@ -43,6 +43,10 @@ export default function ProjectDetail() {
       setIsLiked(res.data.isLiked || false);
       setIsReposted(res.data.isReposted || false);
       setIsSaved(res.data.isSaved || false);
+      
+      // Fetch comments
+      const commentsRes = await axios.get(`/api/projects/${id}/comments`);
+      setComments(commentsRes.data);
     } catch (error) {
       toast.error("Error al cargar el proyecto");
     } finally {
@@ -115,6 +119,24 @@ export default function ProjectDetail() {
       fetchProject();
     } catch (error) {
       toast.error("Error al postular");
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!session?.user || !newComment.trim()) return;
+    setIsPostingComment(true);
+    try {
+      const res = await axios.post(`/api/comments`, {
+        projectId: id,
+        content: newComment.trim(),
+      });
+      setComments([res.data, ...comments]);
+      setNewComment("");
+      toast.success("Comentario publicado");
+    } catch (error) {
+      toast.error("Error al publicar comentario");
+    } finally {
+      setIsPostingComment(false);
     }
   };
 
@@ -279,30 +301,54 @@ export default function ProjectDetail() {
             {/* Comments Section */}
             <div className="border-t border-zinc-800 pt-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <MessageCircle size={20} /> Comentarios
+                <MessageCircle size={20} /> Comentarios ({comments.length})
               </h3>
               
+              {/* Comment Input */}
+              {session?.user && (
+                <div className="mb-4 flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-black text-white">{(session.user as any).name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?'}</span>
+                  </div>
+                  <div className="flex-1">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Escribe un comentario..."
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm outline-none focus:border-blue-500 min-h-[80px] resize-none"
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={handlePostComment}
+                        disabled={isPostingComment || !newComment.trim()}
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-4 py-2 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      >
+                        {isPostingComment ? "Publicando..." : "Publicar"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Comments List */}
               <div className="space-y-0">
-                <CommentItem
-                  id="1"
-                  author="Usuario Ejemplo"
-                  handle="usuario"
-                  authorId="example-id"
-                  content="Este proyecto se ve muy interesante, me gustaría saber más detalles."
-                  likes={5}
-                  isLiked={false}
-                  userId={(session?.user as any)?.id}
-                />
-                <CommentItem
-                  id="2"
-                  author="Dev Profesional"
-                  handle="devpro"
-                  authorId="dev-id"
-                  content="Tengo experiencia con las tecnologías mencionadas, estoy disponible."
-                  likes={12}
-                  isLiked={true}
-                  userId={(session?.user as any)?.id}
-                />
+                {comments.length === 0 && (
+                  <p className="text-center py-8 text-zinc-500 italic">No hay comentarios aún. ¡Sé el primero en comentar!</p>
+                )}
+                {comments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    id={comment.id}
+                    author={comment.user.name}
+                    handle={comment.user.email?.split('@')[0] || "user"}
+                    authorId={comment.user.id}
+                    authorImage={comment.user.image}
+                    content={comment.content}
+                    likes={comment._count?.likes || 0}
+                    isLiked={comment.isLiked || false}
+                    userId={(session?.user as any)?.id}
+                  />
+                ))}
               </div>
             </div>
           </div>
