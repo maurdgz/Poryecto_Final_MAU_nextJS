@@ -33,15 +33,18 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await req.json();
-    const { name, bio, role, certificates } = body;
+    const { name, bio, role, certificates, image, coverImage, lastRoleChange } = body;
 
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        name,
-        bio,
-        role,
-        certificates,
+        ...(name !== undefined && { name }),
+        ...(bio !== undefined && { bio }),
+        ...(role !== undefined && { role }),
+        ...(certificates !== undefined && { certificates }),
+        ...(image !== undefined && { image }),
+        ...(coverImage !== undefined && { coverImage }),
+        ...(lastRoleChange !== undefined && { lastRoleChange }),
       },
     });
 

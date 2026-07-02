@@ -1,4 +1,4 @@
-"use client";
+﻿﻿﻿﻿"use client";
 
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
@@ -9,19 +9,16 @@ import {
   List, 
   Smile, 
   Calendar, 
-  MessageCircle,
-  Repeat2,
-  Heart,
-  BarChart3,
   Plus,
   X,
   Send
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
+import ProjectPost from "@/components/ProjectPost";
 
 export default function Home() {
   const { data: session, update } = useSession();
@@ -29,6 +26,10 @@ export default function Home() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("for-you");
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showLoginToast, setShowLoginToast] = useState(true);
+  const hasProcessedRole = useRef(false);
+  const hasFetchedProjects = useRef(false);
   
   // Post Modal State
   const [showPostModal, setShowPostModal] = useState(false);
@@ -51,22 +52,33 @@ export default function Home() {
     OTHER: ["Python", "Java", "C++", "Go", "Rust", "Cloud Computing"]
   };
 
-  const handleTechClick = (suggestion: string) => {
+  const handleTechClick = useCallback((suggestion: string) => {
     if (tech.includes(suggestion)) {
       setTech(tech.split(',').map(t => t.trim()).filter(t => t !== suggestion).join(', '));
     } else {
       setTech(tech ? `${tech}, ${suggestion}` : suggestion);
     }
-  };
+  }, [tech]);
 
-  useEffect(() => {
-    fetchProjects();
-    if (session?.user) {
-      handleRoleFromUrl();
+  const fetchProjects = useCallback(async () => {
+    if (hasFetchedProjects.current) return;
+    
+    try {
+      const url = session?.user ? `/api/projects?userId=${(session.user as any).id}` : "/api/projects";
+      const res = await axios.get(url);
+      setProjects(res.data);
+    } catch (error) {
+      console.error("Error al cargar proyectos:", error);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+      hasFetchedProjects.current = true;
     }
   }, [session?.user]);
 
-  const handleRoleFromUrl = async () => {
+  const handleRoleFromUrl = useCallback(async () => {
+    if (hasProcessedRole.current) return;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const roleParam = urlParams.get("role");
     
@@ -82,21 +94,32 @@ export default function Home() {
         toast.success(language === "ES-LA" ? `Entraste como ${roleParam === 'CLIENT' ? 'Solicitante' : 'Desarrollador'}` : `Logged in as ${roleParam}`);
         // Clean URL
         window.history.replaceState({}, document.title, "/");
+        hasProcessedRole.current = true;
       } catch (error) {
         console.error("Error setting role from login");
+        hasProcessedRole.current = true;
       }
+    } else if (roleParam) {
+      hasProcessedRole.current = true;
     }
-  };
+  }, [session?.user, update, language]);
 
-  const fetchProjects = async () => {
-    try {
-      const url = session?.user ? `/api/projects?userId=${(session.user as any).id}` : "/api/projects";
-      const res = await axios.get(url);
-      setProjects(res.data);
-    } catch (error) {
-      toast.error("Error al cargar proyectos");
+  useEffect(() => {
+    fetchProjects();
+    if (session?.user) {
+      handleRoleFromUrl();
     }
-  };
+    // Auto-hide login toast after 3 seconds with sessionStorage check
+    if (!sessionStorage.getItem("loginToastShown") && session?.user) {
+      const timer = setTimeout(() => {
+        setShowLoginToast(false);
+        sessionStorage.setItem("loginToastShown", "true");
+      }, 3000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLoginToast(false);
+    }
+  }, [fetchProjects, handleRoleFromUrl, session?.user]);
 
   const handlePost = async () => {
     if (!session) return;
@@ -149,12 +172,12 @@ export default function Home() {
             <div className="flex items-center justify-between p-4">
               <h1 className="text-xl font-bold">{t("home")}</h1>
               {!session && (
-                <Link href="/auth/signin" className="bg-blue-500 text-white px-4 py-1 rounded-full font-bold text-sm">
+                <Link href="/auth/signin" className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all duration-300 px-5 py-2">
                   Login
                 </Link>
               )}
             </div>
-            {session && (
+            {session && showLoginToast && (
               <div className="px-4 pb-2 text-xs text-green-500 font-bold">
                 Conectado como: {session.user?.email} ({(session.user as any).role === 'CLIENT' ? t("role_client") : t("role_developer")})
               </div>
@@ -182,7 +205,7 @@ export default function Home() {
             <div className="p-4 border-b border-zinc-800">
               <button 
                 onClick={() => setShowPostModal(true)}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-full flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
               >
                 <Plus size={20} />
                 {t("make_post")}
@@ -201,7 +224,7 @@ export default function Home() {
                   <button 
                     onClick={handlePost}
                     disabled={isPosting}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all duration-300 disabled:opacity-50"
                   >
                     {isPosting ? "..." : t("publish")}
                   </button>
@@ -283,7 +306,7 @@ export default function Home() {
                     </div>
                     {projectType === "GROUP" && (
                       <div className="space-y-1">
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 ml-1">Número de desarrolladores</label>
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 ml-1">NÃºmero de desarrolladores</label>
                         <input 
                           type="number" 
                           min="1" 
@@ -334,6 +357,7 @@ export default function Home() {
                 id={project.id}
                 author={project.client?.name || "Usuario"} 
                 handle={project.client?.email?.split('@')[0] || "user"} 
+                authorId={project.client?.id}
                 content={project.description}
                 budget={`S/ ${project.budget}`}
                 duration={project.duration}
@@ -348,6 +372,7 @@ export default function Home() {
                 views="0"
                 isLiked={project.isLiked}
                 isReposted={project.isReposted}
+                isSaved={project.isSaved}
                 canApply={(session?.user as any)?.role === "DEVELOPER"}
                 userId={(session?.user as any)?.id}
                 t={t}
@@ -366,182 +391,5 @@ export default function Home() {
         <RightSidebar />
       </div>
     </div>
-  );
-}
-
-function ProjectPost({ id, author, handle, content, budget, duration, type, category, technologies, paymentMethod, replies, reposts, likes, applications, views, isLiked, isReposted, isProject = true, canApply, userId, t, onClick, onUpdate }: any) {
-  const [isApplying, setIsApplying] = useState(false);
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [applyReason, setApplyReason] = useState("");
-
-  const handleApply = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!userId) return;
-
-    if (!applyReason) {
-      toast.error("Debes poner un motivo para postular");
-      return;
-    }
-
-    setIsApplying(true);
-    try {
-      await axios.post("/api/applications", {
-        projectId: id,
-        developerId: userId,
-        reason: applyReason,
-      });
-      toast.success("¡Postulación enviada!");
-      setShowApplyModal(false);
-      setApplyReason("");
-      onUpdate();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Error al postular");
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const handleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!userId) return;
-    try {
-      await axios.post(`/api/projects/${id}/like`);
-      onUpdate();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const handleRepost = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!userId) return;
-    try {
-      await axios.post(`/api/projects/${id}/repost`);
-      onUpdate();
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return (
-    <>
-      <div 
-        onClick={onClick}
-        className="p-4 border-b border-zinc-800 hover:bg-zinc-900/50 cursor-pointer transition-colors flex gap-4"
-      >
-        <div className="w-10 h-10 rounded-full bg-zinc-700 flex-shrink-0" />
-        <div className="flex-grow">
-          <div className="flex items-center gap-1">
-            <span className="font-bold hover:underline">{author}</span>
-            <span className="text-zinc-500 text-sm">@{handle}</span>
-          </div>
-          <p className="mt-1 whitespace-pre-wrap">{content}</p>
-          
-          {isProject && (
-            <div className="mt-3 p-3 border border-zinc-700 rounded-2xl bg-zinc-900/50 flex flex-wrap gap-4">
-              <div>
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">{t("budget")}</p>
-                <p className="font-bold text-sm text-green-500">{budget}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">{t("duration")}</p>
-                <p className="font-bold text-sm">{duration}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">{t("category")}</p>
-                <p className="font-bold text-sm text-blue-400">{category}</p>
-              </div>
-              {technologies && (
-                <div>
-                  <p className="text-[10px] text-zinc-500 uppercase font-bold">{t("technologies")}</p>
-                  <p className="font-bold text-sm">{technologies}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">{t("project_type")}</p>
-                <p className="font-bold text-sm">{type === 'UNITARY' ? t("unitary") : t("group")}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-zinc-500 uppercase font-bold">Postulados</p>
-                <p className="font-bold text-sm">{applications}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-4 text-zinc-500 max-w-md">
-            <div className="flex items-center gap-1 hover:text-blue-500 transition-colors group">
-              <div className="p-2 group-hover:bg-blue-500/10 rounded-full"><MessageCircle size={18} /></div>
-              <span className="text-xs">{replies}</span>
-            </div>
-            <div 
-              onClick={handleRepost}
-              className={`flex items-center gap-1 transition-colors group cursor-pointer ${isReposted ? 'text-green-500' : 'hover:text-green-500'}`}
-            >
-              <div className={`p-2 rounded-full ${isReposted ? 'bg-green-500/10' : 'group-hover:bg-green-500/10'}`}>
-                <Repeat2 size={18} />
-              </div>
-              <span className="text-xs">{reposts}</span>
-            </div>
-            <div 
-              onClick={handleLike}
-              className={`flex items-center gap-1 transition-colors group cursor-pointer ${isLiked ? 'text-pink-500' : 'hover:text-pink-500'}`}
-            >
-              <div className={`p-2 rounded-full ${isLiked ? 'bg-pink-500/10' : 'group-hover:bg-pink-500/10'}`}>
-                <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
-              </div>
-              <span className="text-xs">{likes}</span>
-            </div>
-            <div className="flex items-center gap-1 hover:text-blue-500 transition-colors group">
-              <div className="p-2 group-hover:bg-blue-500/10 rounded-full"><BarChart3 size={18} /></div>
-              <span className="text-xs">{views}</span>
-            </div>
-            {canApply && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowApplyModal(true);
-                }}
-                className="bg-white text-black text-xs font-bold px-4 py-1.5 rounded-full hover:bg-zinc-200 transition-colors"
-              >
-                {t("apply")}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Apply Modal */}
-      {showApplyModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-black border border-zinc-800 w-full max-w-md rounded-2xl p-6 space-y-4">
-            <h2 className="text-xl font-bold">{t("apply")} - {author}</h2>
-            <div className="space-y-1">
-              <label className="text-sm text-zinc-500">{t("apply_reason")}</label>
-              <textarea 
-                value={applyReason}
-                onChange={(e) => setApplyReason(e.target.value)}
-                placeholder="Hola, me interesa porque..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-sm outline-none focus:border-blue-500 h-32 resize-none"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowApplyModal(false)}
-                className="flex-1 border border-zinc-700 font-bold py-2 rounded-full hover:bg-zinc-900 transition-colors"
-              >
-                {t("cancel")}
-              </button>
-              <button 
-                onClick={handleApply}
-                disabled={isApplying}
-                className="flex-1 bg-blue-500 text-white font-bold py-2 rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
-              >
-                {isApplying ? "..." : t("apply")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   );
 }

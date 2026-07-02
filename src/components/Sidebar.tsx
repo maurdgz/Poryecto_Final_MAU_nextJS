@@ -27,6 +27,26 @@ const SidebarItem = ({ icon: Icon, label, href, active }: any) => (
   </Link>
 );
 
+const CrownIcon = () => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    className="w-8 h-8"
+  >
+    <defs>
+      <linearGradient id="crownGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{ stopColor: '#818cf8', stopOpacity: 1 }} />
+        <stop offset="50%" style={{ stopColor: '#a855f7', stopOpacity: 1 }} />
+        <stop offset="100%" style={{ stopColor: '#34d399', stopOpacity: 1 }} />
+      </linearGradient>
+    </defs>
+    <path 
+      d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5ZM5 16V19C5 19.5304 5.21071 20.0391 5.58579 20.4142C5.96086 20.7893 6.46957 21 7 21H17C17.5304 21 18.0391 20.7893 18.4142 20.4142C18.7893 20.0391 19 19.5304 19 19V16H5Z" 
+      fill="url(#crownGradient)"
+    />
+  </svg>
+);
+
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -37,7 +57,7 @@ export function Sidebar() {
     <aside className="flex flex-col h-screen sticky top-0 px-2 xl:px-4 py-4 w-20 xl:w-64 border-r border-zinc-800">
       <div className="mb-4 px-3 flex items-center justify-between">
         <Link href="/">
-          <Code2 size={32} className="text-blue-500" />
+          <CrownIcon />
         </Link>
         <button 
           onClick={() => setLanguage(language === "ES-LA" ? "EN-US" : "ES-LA")}

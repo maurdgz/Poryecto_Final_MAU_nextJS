@@ -41,12 +41,30 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
         token.id = user.id;
       }
+      
+      // Sync with database to get latest role
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, lastRoleChange: true }
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.lastRoleChange = dbUser.lastRoleChange;
+          }
+        } catch (error) {
+          console.error("Error syncing role from DB:", error);
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        (session.user as any).lastRoleChange = token.lastRoleChange;
       }
       return session;
     },

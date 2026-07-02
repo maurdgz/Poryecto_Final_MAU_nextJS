@@ -17,8 +17,8 @@ export async function POST(
     const userId = (session.user as any).id;
     const projectId = id;
 
-    // Check if already reposted
-    const existingRepost = await prisma.repost.findUnique({
+    // Check if already saved
+    const existingSaved = await prisma.savedProject.findUnique({
       where: {
         projectId_userId: {
           projectId,
@@ -27,27 +27,26 @@ export async function POST(
       },
     });
 
-    if (existingRepost) {
-      // Remove repost
-      await prisma.repost.delete({
+    if (existingSaved) {
+      // Remove save
+      await prisma.savedProject.delete({
         where: {
-          id: existingRepost.id,
+          id: existingSaved.id,
         },
       });
-      return NextResponse.json({ reposted: false });
+      return NextResponse.json({ saved: false });
     } else {
-      // Add repost
-      await prisma.repost.create({
+      // Add save
+      await prisma.savedProject.create({
         data: {
           projectId,
           userId,
-          createdAt: new Date(),
         },
       });
-      return NextResponse.json({ reposted: true });
+      return NextResponse.json({ saved: true });
     }
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error toggling repost" }, { status: 500 });
+    return NextResponse.json({ error: "Error toggling save" }, { status: 500 });
   }
 }

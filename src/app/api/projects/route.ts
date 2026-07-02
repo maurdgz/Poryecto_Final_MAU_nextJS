@@ -5,10 +5,17 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const userId = url.searchParams.get("userId");
+    const isProfileRequest = url.searchParams.get("profile") === "true";
 
     const projects = await prisma.project.findMany({
       where: {
         status: "OPEN",
+        ...(isProfileRequest && userId && {
+          OR: [
+            { clientId: userId },
+            { developerId: userId }
+          ]
+        }),
       },
       include: {
         client: {
@@ -31,12 +38,12 @@ export async function GET(req: Request) {
       },
     });
 
-    // If userId is provided, check if user liked/reposted each project
+    // If userId is provided, check if user liked/reposted/saved each project
     let projectsWithUserData = projects;
     if (userId) {
       projectsWithUserData = await Promise.all(
         projects.map(async (project) => {
-          const [like, repost] = await Promise.all([
+          const [like, repost, saved] = await Promise.all([
             prisma.like.findUnique({
               where: {
                 projectId_userId: {
@@ -53,11 +60,20 @@ export async function GET(req: Request) {
                 },
               },
             }),
+            prisma.savedProject.findUnique({
+              where: {
+                projectId_userId: {
+                  projectId: project.id,
+                  userId: userId,
+                },
+              },
+            }),
           ]);
           return {
             ...project,
             isLiked: !!like,
             isReposted: !!repost,
+            isSaved: !!saved,
           };
         })
       );

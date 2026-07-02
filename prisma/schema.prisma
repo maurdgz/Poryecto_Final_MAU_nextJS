@@ -49,9 +49,11 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  coverImage    String?
   role          UserRole  @default(CLIENT)
   bio           String?
   certificates  String?
+  lastRoleChange DateTime? @default(now())
   
   accounts      Account[]
   sessions      Session[]
@@ -62,6 +64,7 @@ model User {
   selectedForProjects SelectedDeveloper[]
   likes         Like[]
   reposts       Repost[]
+  savedProjects SavedProject[]
   chatsAsClient Chat[] @relation("ChatClient")
   chatsAsDeveloper Chat[] @relation("ChatDeveloper")
   messagesSent Message[]
@@ -70,6 +73,11 @@ model User {
   reviewsGiven    Review[] @relation("Reviewer")
 
   notifications   Notification[]
+
+  comments        Comment[]
+  commentLikes    CommentLike[]
+  commentReposts  CommentRepost[]
+  savedComments   SavedComment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,7 +147,9 @@ model Project {
   reviews          Review[]
   likes            Like[]
   reposts          Repost[]
+  savedProjects    SavedProject[]
   chats            Chat[]
+  comments         Comment[]
 
   createdAt DateTime @default(now())
   expiresAt DateTime? // How long the post will be visible
@@ -165,6 +175,16 @@ model Like {
 }
 
 model Repost {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([projectId, userId])
+}
+
+model SavedProject {
   id        String   @id @default(cuid())
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -229,4 +249,47 @@ model Review {
   stars         Int      // 1 to 5
   comment       String?
   createdAt     DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  likes     CommentLike[]
+  reposts   CommentRepost[]
+  savedBy   SavedComment[]
+  createdAt DateTime @default(now())
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([commentId, userId])
+}
+
+model CommentRepost {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([commentId, userId])
+}
+
+model SavedComment {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([commentId, userId])
 }
